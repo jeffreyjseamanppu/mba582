@@ -1,1 +1,1 @@
-# mba582
+# MBA 582 : Database Architecture Designs
