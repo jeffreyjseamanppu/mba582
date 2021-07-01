@@ -1,0 +1,56 @@
+const http = require('http');
+const mysql = require('mysql');
+
+const pool = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "Password Here",
+  database: "Database Name",
+  charset: 'utf8'
+});
+
+//html string that will be send to browser
+var reo ='<html><head><title>Product Order Information</title></head><body><h1>My Products Order App</h1>{${table}}</body></html>';
+
+//sets and returns html table with results from sql select
+//Receives sql query and callback function to return the table
+function setResHtml(sql, cb){
+  pool.getConnection((err, con)=>{
+    if(err) throw err;
+
+    con.query(sql, (err, res, cols)=>{
+      if(err) throw err;
+
+      var table =''; //to store html table
+
+      //create html table with data from res.
+      //Line 29: Use your field names from your table here. Example CustomerName and City is the Products table
+      for(var i=0; i<res.length; i++){
+        table +='<tr><td>'+ (i+1) +'</td><td>'+ res[i].CustomerName +'</td><td>'+ res[i].City +'</td></tr>';
+      }
+      table ='<table border="1"><tr><th>Id.</th><th>Name</th><th>City</th></tr>'+ table +'</table>';
+
+      con.release(); //Done with mysql connection
+
+      return cb(table);
+    });
+  });
+}
+
+// Query for selecting your table fields from your table
+// Replace name of fields and customer table with your information
+let sql ='SELECT CustomerName, City FROM Customers ORDER BY CustomerName';
+
+//create the server for browser access
+const server = http.createServer((req, res)=>{
+  setResHtml(sql, resql=>{
+    reo = reo.replace('{${table}}', resql);
+    res.writeHead(200, {'Content-Type':'text/html; charset=utf-8'});
+    res.write(reo, 'utf-8');
+    res.end();
+  });
+});
+
+server.listen(9010, ()=>{
+  console.log('Server running at //localhost:9010/');
+});
